@@ -8,4 +8,3 @@ if __name__ == '__main__':
     # print(df.shape)
     # print(df.head())
     print(result.shape)
-
