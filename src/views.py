@@ -28,3 +28,25 @@ def get_card_data(transactions: pd.DataFrame) -> list[dict]:
             'cashback': round(spent / 100, 2)
         })
     return result
+
+
+def get_top_transactions(transactions: pd.DataFrame) -> list[dict]:
+    mask = (transactions['Статус'] == 'OK')
+    s_trans = transactions[mask].sort_values('Сумма платежа', ascending=False).head(5)
+    result = []
+    for _, row in s_trans.iterrows():
+        result.append({
+            'date': row['Дата платежа'],
+            'amount': row['Сумма платежа'],
+            'category': row['Категория'],
+            'description': row['Описание'],
+        })
+    return result
+
+
+def filter_by_period(transactions: pd.DataFrame, date_time: str) -> pd.DataFrame:
+    end = datetime.strptime(date_time, '%Y-%m-%d %H:%M:%S')
+    start = end.replace(day=1, hour=0, minute=0, second=0)
+    dates = pd.to_datetime(transactions['Дата операции'], dayfirst=True)
+    mask = (dates >= start) & (dates <= end)
+    return transactions[mask]
