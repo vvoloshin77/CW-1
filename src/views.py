@@ -1,5 +1,10 @@
+import os
+import requests
+from dotenv import load_dotenv
 from datetime import datetime
 import pandas as pd
+
+load_dotenv()
 
 
 def get_greeting(date_time: str) -> str:
@@ -50,3 +55,40 @@ def filter_by_period(transactions: pd.DataFrame, date_time: str) -> pd.DataFrame
     dates = pd.to_datetime(transactions['Дата операции'], dayfirst=True)
     mask = (dates >= start) & (dates <= end)
     return transactions[mask]
+
+
+def get_currency_rates(currencies: list[str]) -> list[dict]:
+    key = os.getenv('API_KEY_CURRENCY')
+    result = []
+    for cur in currencies:
+        try:
+            url = f"https://v6.exchangerate-api.com/v6/{key}/latest/{cur}"
+            data = requests.get(url, timeout=20).json()
+            rate = data['conversion_rates']['RUB']
+            result.append({
+                'currency': cur,
+                'rate': round(rate, 2),
+            })
+        except (requests.exceptions.RequestException, KeyError, ValueError):
+            continue
+    return result
+
+
+def get_stock_prices(stocks: list[str]) -> list[dict]:
+    key = os.getenv('API_KEY_STOCK')
+    result = []
+    for symbol in stocks:
+        try:
+            data = requests.get(
+                "https://www.alphavantage.co/query",
+                params={"function": "GLOBAL_QUOTE", "symbol": symbol, "apikey": key},
+                timeout=20,
+            ).json()
+            price = float(data['Global Quote']['05. price'])
+            result.append({
+                'stock': symbol,
+                'price': price,
+            })
+        except (requests.exceptions.RequestException, KeyError, ValueError):
+            continue
+    return result
