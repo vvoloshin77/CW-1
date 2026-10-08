@@ -1,8 +1,11 @@
+import json
 import os
 import requests
 from dotenv import load_dotenv
 from datetime import datetime
 import pandas as pd
+
+from src.utils import read_transactions
 
 load_dotenv()
 
@@ -92,3 +95,23 @@ def get_stock_prices(stocks: list[str]) -> list[dict]:
         except (requests.exceptions.RequestException, KeyError, ValueError):
             continue
     return result
+
+
+def main_page(date_time: str, file_path: str = 'data/operations.xlsx') -> str:
+    transactions = read_transactions(file_path)
+    with open('user_settings.json', encoding='utf-8') as file:
+        settings = json.load(file)
+    period = filter_by_period(transactions, date_time)
+    greeting = get_greeting(date_time)
+    data = get_card_data(period)
+    top = get_top_transactions(period)
+    currency = get_currency_rates(settings['user_currencies'])
+    stock = get_stock_prices(settings['user_stocks'])
+    answer = {
+        'greeting': greeting,
+        'cards': data,
+        'top_transactions': top,
+        'currency_rates': currency,
+        'stock_prices': stock,
+    }
+    return json.dumps(answer, ensure_ascii=False, indent=2)
