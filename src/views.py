@@ -79,7 +79,7 @@ def get_currency_rates(currencies: list[str]) -> list[dict]:
                     "rate": round(rate, 2),
                 }
             )
-        except requests.exceptions.RequestException, KeyError, ValueError:
+        except (requests.exceptions.RequestException, KeyError, ValueError):
             continue
     return result
 
