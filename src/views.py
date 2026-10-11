@@ -101,7 +101,7 @@ def get_stock_prices(stocks: list[str]) -> list[dict]:
                     "price": price,
                 }
             )
-        except requests.exceptions.RequestException, KeyError, ValueError:
+        except (requests.exceptions.RequestException, KeyError, ValueError):
             continue
     return result
 
