@@ -1,7 +1,13 @@
 from src.views import main_page
+import logging
 
-# from src.reports import spending_by_category
-# from src.utils import read_transactions
+logging.basicConfig(
+    filename='logs/log_report.log',
+    filemode='w',
+    format='%(asctime)s %(name)s %(levelname)s: %(message)s',
+    level=logging.INFO,
+    encoding='utf-8',
+)
 
 
 if __name__ == "__main__":

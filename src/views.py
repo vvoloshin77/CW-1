@@ -1,12 +1,13 @@
 import json
 import os
 from datetime import datetime
-
 import pandas as pd
 import requests
 from dotenv import load_dotenv
-
 from src.utils import read_transactions
+import logging
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -15,13 +16,16 @@ def get_greeting(date_time: str) -> str:
     dt = datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S")
     hour = dt.hour
     if 6 <= hour <= 11:
-        return "Доброе утро"
+        greeting = "Доброе утро"
     elif 12 <= hour <= 17:
-        return "Добрый день"
+        greeting = "Добрый день"
     elif 18 <= hour <= 22:
-        return "Добрый вечер"
+        greeting = "Добрый вечер"
     else:
-        return "Доброй ночи"
+        greeting = "Доброй ночи"
+
+    logger.info('Приветствие: %s', greeting)
+    return greeting
 
 
 def get_card_data(transactions: pd.DataFrame) -> list[dict]:
@@ -38,6 +42,7 @@ def get_card_data(transactions: pd.DataFrame) -> list[dict]:
                 "cashback": round(spent / 100, 2),
             }
         )
+    logger.info('Карт в ответе: %s', len(result))
     return result
 
 
@@ -54,6 +59,7 @@ def get_top_transactions(transactions: pd.DataFrame) -> list[dict]:
                 "description": row["Описание"],
             }
         )
+    logger.info('Транзакций в топе: %s', len(result))
     return result
 
 
@@ -62,7 +68,9 @@ def filter_by_period(transactions: pd.DataFrame, date_time: str) -> pd.DataFrame
     start = end.replace(day=1, hour=0, minute=0, second=0)
     dates = pd.to_datetime(transactions["Дата операции"], dayfirst=True)
     mask = (dates >= start) & (dates <= end)
-    return transactions[mask]
+    result = transactions[mask]
+    logger.info('Период %s - %s, строк: %s', start, end, len(result))
+    return result
 
 
 def get_currency_rates(currencies: list[str]) -> list[dict]:
@@ -79,7 +87,8 @@ def get_currency_rates(currencies: list[str]) -> list[dict]:
                     "rate": round(rate, 2),
                 }
             )
-        except (requests.exceptions.RequestException, KeyError, ValueError):
+        except (requests.exceptions.RequestException, KeyError, ValueError) as e:
+            logger.error('Не удалось получить курс %s: %s', cur, e)
             continue
     return result
 
@@ -101,12 +110,14 @@ def get_stock_prices(stocks: list[str]) -> list[dict]:
                     "price": price,
                 }
             )
-        except (requests.exceptions.RequestException, KeyError, ValueError):
+        except (requests.exceptions.RequestException, KeyError, ValueError) as e:
+            logger.error('Не удалось получить акцию %s: %s', symbol, e)
             continue
     return result
 
 
 def main_page(date_time: str, file_path: str = "data/operations.xlsx") -> str:
+    logger.info('Главная страница на %s', date_time)
     transactions = read_transactions(file_path)
     with open("user_settings.json", encoding="utf-8") as file:
         settings = json.load(file)
@@ -123,4 +134,5 @@ def main_page(date_time: str, file_path: str = "data/operations.xlsx") -> str:
         "currency_rates": currency,
         "stock_prices": stock,
     }
+    logger.info('Ответ собран')
     return json.dumps(answer, ensure_ascii=False, indent=2)

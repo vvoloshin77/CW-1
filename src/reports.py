@@ -1,6 +1,8 @@
 from typing import Optional
-
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def report_to_file(arg=None):
@@ -25,6 +27,7 @@ def report_to_file(arg=None):
 def spending_by_category(
     transactions: pd.DataFrame, category: str, date: Optional[str] = None
 ) -> pd.DataFrame:
+    logger.info('Отчёт по категории %s, дата %s', category, date)
     dates = pd.to_datetime(transactions["Дата операции"], dayfirst=True)
     if date is None:
         end = pd.Timestamp.now()
@@ -38,4 +41,6 @@ def spending_by_category(
         & (transactions["Статус"] == "OK")
         & (transactions["Сумма операции"] < 0)
     )
-    return transactions[mask]
+    result = transactions[mask]
+    logger.info('Строк в отчёте: %s', len(result))
+    return result
